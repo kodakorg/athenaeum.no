@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: [self-hosted, runner-node]
+    runs-on: [self-hosted, runner-nginx]
     steps:
       - name: Setenv
         run: |
@@ -20,7 +20,7 @@ jobs:
 
       - name: Update and Deploy
         run: |
-          TARGET_DIR="/home/zom/${{ env.URL }}"
+          TARGET_DIR="/home/zom/www/${{ env.URL }}"
           BACKUP_DIR="/home/zom/backups/${{ env.URL }}-$(date +%Y%m%d-%H%M%S)"
           REPO_URL="git@github.com:${{ github.repository }}.git"
 
