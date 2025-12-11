@@ -20,6 +20,14 @@ jobs:
 
       - name: Update and Deploy
         run: |
+          # Load nvm to make node and npm available
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          
+          # Verify Node.js is available
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          
           TARGET_DIR="/home/zom/www/${{ env.URL }}"
           BACKUP_DIR="/home/zom/backups/${{ env.URL }}-$(date +%Y%m%d-%H%M%S)"
           REPO_URL="git@github.com:${{ github.repository }}.git"
