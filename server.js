@@ -208,6 +208,7 @@ app.post('/skjema', async function (req, res) {
   }
 });
 
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
