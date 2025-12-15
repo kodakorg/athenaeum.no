@@ -11,132 +11,73 @@ jobs:
   build:
     runs-on: [self-hosted, runner-nginx]
     steps:
-      - name: Setenv
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set env vars
         run: |
           echo "URL=athenaeum.no" >>$GITHUB_ENV
+          echo "PORT=8888" >>$GITHUB_ENV
 
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Update and Deploy
+      - name: Deploy
         run: |
-          # Load nvm to make node and npm available
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           
-          # Verify Node.js is available
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          
           TARGET_DIR="/home/zom/www/${{ env.URL }}"
           BACKUP_DIR="/home/zom/backups/${{ env.URL }}-$(date +%Y%m%d-%H%M%S)"
-          REPO_URL="git@github.com:${{ github.repository }}.git"
-
-          # Create backup of current deployment
+          TEMP_DIR="/tmp/deploy-${{ env.URL }}-$$"
+          
+          # Backup current deployment
           if [ -d "$TARGET_DIR" ]; then
-            echo "Creating backup of current deployment..."
             mkdir -p "$(dirname "$BACKUP_DIR")"
             cp -r "$TARGET_DIR" "$BACKUP_DIR"
-            echo "Backup created at: $BACKUP_DIR"
-          fi
-
-          # Fresh install or update
-          if [ ! -d "$TARGET_DIR" ]; then
-            echo "Directory does not exist, creating and cloning repository..."
-            mkdir -p "$TARGET_DIR"
-            git clone "$REPO_URL" "$TARGET_DIR" || { echo "Git clone failed"; exit 1; }
-            pushd "$TARGET_DIR"
-          else
-            echo "Directory exists, pulling latest changes..."
-            pushd "$TARGET_DIR"
-            git pull || { echo "Git pull failed"; exit 1; }
-          fi
-
-          # Clean install with fallback strategies
-          echo "Attempting clean npm install..."
-          
-          # Strategy 1: Try npm ci first (fastest for production)
-          if npm ci 2>/dev/null; then
-            echo "npm ci succeeded"
-          else
-            echo "npm ci failed, trying alternative strategies..."
-            
-            # Strategy 2: Remove node_modules and package-lock, then install
-            echo "Removing node_modules and package-lock.json..."
-            rm -rf node_modules package-lock.json
-            
-            if npm install; then
-              echo "npm install succeeded after cleanup"
-            else
-              echo "npm install failed, restoring from backup..."
-              popd
-              
-              # Restore from backup
-              if [ -d "$BACKUP_DIR" ]; then
-                rm -rf "$TARGET_DIR"
-                mv "$BACKUP_DIR" "$TARGET_DIR"
-                echo "Restored from backup"
-                exit 1
-              else
-                echo "No backup available, deployment failed"
-                exit 1
-              fi
-            fi
-          fi
-
-          popd
-
-          echo "Testing application..."
-          pushd "$TARGET_DIR"
-          
-          # Run a quick syntax check or test if available
-          if [ -f "package.json" ] && grep -q "\"test\"" package.json; then
-            npm test || echo "Tests failed but continuing..."
+            echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
           fi
           
-          # Check if main file exists and is valid
+          # Preserve files
+          mkdir -p "$TEMP_DIR"
+          [ -f "$TARGET_DIR/.env" ] && cp "$TARGET_DIR/.env" "$TEMP_DIR/"
+          [ -d "$TARGET_DIR/public/uploads" ] && cp -r "$TARGET_DIR/public/uploads" "$TEMP_DIR/"
+          
+          # Clean install
+          rm -rf "$TARGET_DIR"
+          git clone "git@github.com:${{ github.repository }}.git" "$TARGET_DIR"
+          cd "$TARGET_DIR"
+          
+          # Restore preserved files
+          [ -f "$TEMP_DIR/.env" ] && cp "$TEMP_DIR/.env" .
+          [ -d "$TEMP_DIR/uploads" ] && mkdir -p public && cp -r "$TEMP_DIR/uploads" public/
+          
+          # Install dependencies
+          npm ci || npm install
+          
+          # Verify main file
           MAIN_FILE=$(node -e "console.log(require('./package.json').main || 'server.js')" 2>/dev/null || echo "server.js")
-          if [ -f "$MAIN_FILE" ]; then
-            node -c "$MAIN_FILE" || { echo "Syntax error in main file"; exit 1; }
-          fi
+          [ -f "$MAIN_FILE" ] && node -c "$MAIN_FILE"
           
-          popd
+          sudo systemctl restart ${{ env.URL }}
+          rm -rf "$TEMP_DIR"
 
-          echo "Restarting service..."
-          sudo systemctl restart ${{ env.URL }} || { 
-            echo "Service restart failed, attempting to restore backup..."
-            
-            if [ -d "$BACKUP_DIR" ]; then
-              rm -rf "$TARGET_DIR"
-              mv "$BACKUP_DIR" "$TARGET_DIR"
-              sudo systemctl restart ${{ env.URL }}
-              echo "Service restored from backup"
-            fi
-            
-            exit 1
-          }
-
-        working-directory: ${{ github.workspace }}
-
-      - name: Verify Deployment
+      - name: Verify
         run: |
-          echo "Waiting for service to start..."
-          sleep 10
-          if sudo systemctl is-active ${{ env.URL }} --quiet; then
-            echo "Service is running"
-            curl -f http://localhost:8888/health || { echo "Health check failed"; exit 1; }
-          else
-            echo "Service failed to start"
-            sudo systemctl status ${{ env.URL }}
-            exit 1
-          fi
+          sleep 5
+          sudo systemctl is-active ${{ env.URL }} --quiet || exit 1
+          curl -sf http://localhost:${{ env.PORT }}/health || exit 1
 
-      - name: Cleanup Old Backups
+      - name: Cleanup Backups
+        if: success()
         run: |
-          # Keep only the last backup
           BACKUP_BASE="/home/zom/backups"
-          if [ -d "$BACKUP_BASE" ]; then
-            find "$BACKUP_BASE" -name "${{ env.URL }}-*" -type d | sort -r | tail -n +2 | xargs rm -rf
-            echo "Cleaned up old backups"
-          fi
+          find "$BACKUP_BASE" -name "${{ env.URL }}-*" -type d | sort -r | tail -n +3 | xargs rm -rf
         continue-on-error: true
+
+      - name: Rollback on Failure
+        if: failure() && env.BACKUP_DIR != ''
+        run: |
+          TARGET_DIR="/home/zom/www/${{ env.URL }}"
+          echo "Deployment failed, restoring from backup..."
+          rm -rf "$TARGET_DIR"
+          cp -r "$BACKUP_DIR" "$TARGET_DIR"
+          sudo systemctl restart ${{ env.URL }}
+          echo "Rolled back to previous version"
