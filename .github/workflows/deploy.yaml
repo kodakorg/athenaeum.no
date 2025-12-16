@@ -24,7 +24,7 @@ jobs:
         run: |
           echo "URL=athenaeum.no" >>$GITHUB_ENV
           echo "APP_NAME=athenaeum" >>$GITHUB_ENV
-          echo "PORT=3002" >>$GITHUB_ENV
+          echo "PORT=3001" >>$GITHUB_ENV
 
       - name: Deploy
         run: |
@@ -34,7 +34,7 @@ jobs:
 
           git clone "git@github.com:${{ github.repository }}.git" "$CLONE_DIR"
           mkdir -p "$TARGET_DIR"
-          rsync -av --delete \
+          rsync -aq --delete \
             --exclude='.env' \
             --exclude='logs' \
             --exclude='public/uploads' \
