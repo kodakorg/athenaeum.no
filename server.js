@@ -1,7 +1,7 @@
 // server.js
 const express = require('express');
 const app = express();
-const port = 8888
+const PORT = process.env.PORT || 3000;
 const nodemailer = require('nodemailer');
 const morgan = require('morgan')
 const favicon = require('serve-favicon');
@@ -213,6 +213,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(process.env.PORT || port, () => {
-  console.log(`App listening at http://localhost:${port}`)
+app.listen(PORT, () => {
+  console.log(`App listening at http://localhost:${PORT}`)
 })
