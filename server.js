@@ -11,24 +11,29 @@ require('dotenv').config()
 const rfs = require('rotating-file-stream');
 const fs = require('fs').promises;
 
-const accessLogStream = rfs.createStream('access.log', {
-  interval: '1d',
-  maxFiles: 30,
-  path: path.join(__dirname, 'logs'),
-  compress: 'gzip'
-});
+if (process.env.ENABLE_FILE_LOGGING === 'true') {
+  const accessLogStream = rfs.createStream('access.log', {
+    interval: '1d',
+    maxFiles: 30,
+    path: path.join(__dirname, 'logs'),
+    compress: 'gzip'
+  });
 
-morgan.format('file', [
-  ':req[x-forwarded-for]',
-  '[:date[clf]]',
-  '":method :url HTTP/:http-version"',
-  ':status',
-  ':res[content-length]',
-  ':response-time ms',
-  '":referrer"',
-  '":req[accept-language]"',
-  '":user-agent"',
-].join(' '));
+  morgan.format('file', [
+    ':req[x-forwarded-for]',
+    '[:date[clf]]',
+    '":method :url HTTP/:http-version"',
+    ':status',
+    ':res[content-length]',
+    ':response-time ms',
+    '":referrer"',
+    '":req[accept-language]"',
+    '":user-agent"',
+  ].join(' '));
+  app.use(morgan('file', { stream: accessLogStream }));
+} else {
+  app.use(morgan('combined'));
+}
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -38,7 +43,7 @@ app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.set('view engine', 'ejs');
 app.set('trust proxy', 1);
 
-app.use(morgan('file', { stream: accessLogStream }));
+
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',

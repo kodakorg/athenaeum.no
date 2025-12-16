@@ -17,7 +17,8 @@ jobs:
       - name: Set env vars
         run: |
           echo "URL=athenaeum.no" >>$GITHUB_ENV
-          echo "PORT=8888" >>$GITHUB_ENV
+          echo "APP_NAME=athenaeum" >>$GITHUB_ENV
+          echo "PORT=3002" >>$GITHUB_ENV
 
       - name: Deploy
         run: |
@@ -56,13 +57,20 @@ jobs:
           MAIN_FILE=$(node -e "console.log(require('./package.json').main || 'server.js')" 2>/dev/null || echo "server.js")
           [ -f "$MAIN_FILE" ] && node -c "$MAIN_FILE"
           
-          sudo systemctl restart ${{ env.URL }}
+          # Restart with PM2 (graceful reload if running, start if not)
+          pm2 describe ${{ env.APP_NAME }} > /dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            pm2 reload ${{ env.APP_NAME }} --update-env
+          else
+            pm2 start ${{ env.APP_NAME }}
+          fi
+          
           rm -rf "$TEMP_DIR"
 
       - name: Verify
         run: |
           sleep 5
-          sudo systemctl is-active ${{ env.URL }} --quiet || exit 1
+          pm2 describe ${{ env.APP_NAME }} | grep "status" | grep -q "online" || exit 1
           curl -sf http://localhost:${{ env.PORT }}/health || exit 1
 
       - name: Cleanup Backups
@@ -79,5 +87,10 @@ jobs:
           echo "Deployment failed, restoring from backup..."
           rm -rf "$TARGET_DIR"
           cp -r "$BACKUP_DIR" "$TARGET_DIR"
-          sudo systemctl restart ${{ env.URL }}
+          pm2 describe ${{ env.APP_NAME }} > /dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            pm2 reload ${{ env.APP_NAME }}
+          else
+            pm2 start ${{ env.APP_NAME }}
+          fi
           echo "Rolled back to previous version"
