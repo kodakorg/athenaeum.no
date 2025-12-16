@@ -11,6 +11,12 @@ jobs:
   build:
     runs-on: [self-hosted, runner-nginx]
     steps:
+      - name: Setup Node
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          echo "$NVM_DIR/versions/node/$(node -v)/bin" >> $GITHUB_PATH
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -22,75 +28,28 @@ jobs:
 
       - name: Deploy
         run: |
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          
           TARGET_DIR="/home/zom/www/${{ env.URL }}"
-          BACKUP_DIR="/home/zom/backups/${{ env.URL }}-$(date +%Y%m%d-%H%M%S)"
           TEMP_DIR="/tmp/deploy-${{ env.URL }}-$$"
-          
-          # Backup current deployment
-          if [ -d "$TARGET_DIR" ]; then
-            mkdir -p "$(dirname "$BACKUP_DIR")"
-            cp -r "$TARGET_DIR" "$BACKUP_DIR"
-            echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
-          fi
-          
-          # Preserve files
-          mkdir -p "$TEMP_DIR"
-          [ -f "$TARGET_DIR/.env" ] && cp "$TARGET_DIR/.env" "$TEMP_DIR/"
-          [ -d "$TARGET_DIR/public/uploads" ] && cp -r "$TARGET_DIR/public/uploads" "$TEMP_DIR/"
-          
-          # Clean install
-          rm -rf "$TARGET_DIR"
-          git clone "git@github.com:${{ github.repository }}.git" "$TARGET_DIR"
+          CLONE_DIR="$TEMP_DIR/repo_clone"
+
+          git clone "git@github.com:${{ github.repository }}.git" "$CLONE_DIR"
+          mkdir -p "$TARGET_DIR"
+          rsync -av --delete \
+            --exclude='.env' \
+            --exclude='logs' \
+            --exclude='public/uploads' \
+            "$CLONE_DIR/" "$TARGET_DIR/"
+
           cd "$TARGET_DIR"
-          
-          # Restore preserved files
-          [ -f "$TEMP_DIR/.env" ] && cp "$TEMP_DIR/.env" .
-          [ -d "$TEMP_DIR/uploads" ] && mkdir -p public && cp -r "$TEMP_DIR/uploads" public/
-          
-          # Install dependencies
           npm ci || npm install
-          
-          # Verify main file
           MAIN_FILE=$(node -e "console.log(require('./package.json').main || 'server.js')" 2>/dev/null || echo "server.js")
-          [ -f "$MAIN_FILE" ] && node -c "$MAIN_FILE"
-          
-          # Restart with PM2 (graceful reload if running, start if not)
+          [[ -f "$MAIN_FILE" ]] && node -c "$MAIN_FILE"
           pm2 describe ${{ env.APP_NAME }} > /dev/null 2>&1
-          if [ $? -eq 0 ]; then
-            pm2 reload ${{ env.APP_NAME }} --update-env
-          else
-            pm2 start ${{ env.APP_NAME }}
-          fi
-          
-          rm -rf "$TEMP_DIR"
+          [[ $? -eq 0 ]] && pm2 reload ${{ env.APP_NAME }} --update-env || pm2 start ${{ env.APP_NAME }}
+          rm -rf "$TEMP_DIR" "$CLONE_DIR"
 
       - name: Verify
         run: |
           sleep 5
           pm2 describe ${{ env.APP_NAME }} | grep "status" | grep -q "online" || exit 1
           curl -sf http://localhost:${{ env.PORT }}/health || exit 1
-
-      - name: Cleanup Backups
-        if: success()
-        run: |
-          BACKUP_BASE="/home/zom/backups"
-          find "$BACKUP_BASE" -name "${{ env.URL }}-*" -type d | sort -r | tail -n +3 | xargs rm -rf
-        continue-on-error: true
-
-      - name: Rollback on Failure
-        if: failure() && env.BACKUP_DIR != ''
-        run: |
-          TARGET_DIR="/home/zom/www/${{ env.URL }}"
-          echo "Deployment failed, restoring from backup..."
-          rm -rf "$TARGET_DIR"
-          cp -r "$BACKUP_DIR" "$TARGET_DIR"
-          pm2 describe ${{ env.APP_NAME }} > /dev/null 2>&1
-          if [ $? -eq 0 ]; then
-            pm2 reload ${{ env.APP_NAME }}
-          else
-            pm2 start ${{ env.APP_NAME }}
-          fi
-          echo "Rolled back to previous version"
