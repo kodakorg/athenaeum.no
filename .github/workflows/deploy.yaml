@@ -1,11 +1,9 @@
-name: deploy
+name: Deploy Athenaeum.no
+
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
-permissions:
-  contents: read
 
 jobs:
   build:
@@ -17,39 +15,54 @@ jobs:
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           echo "$NVM_DIR/versions/node/$(node -v)/bin" >> $GITHUB_PATH
 
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set env vars
+      - name: Set environment variables
         run: |
-          echo "URL=athenaeum.no" >>$GITHUB_ENV
-          echo "APP_NAME=athenaeum" >>$GITHUB_ENV
-          echo "PORT=3001" >>$GITHUB_ENV
+          echo "URL=athenaeum.no" >> $GITHUB_ENV
+          echo "APP_NAME=athenaeum" >> $GITHUB_ENV
+          echo "PORT=3001" >> $GITHUB_ENV
 
       - name: Deploy
         run: |
           TARGET_DIR="/home/zom/www/${{ env.URL }}"
-          TEMP_DIR="/tmp/deploy-${{ env.URL }}-$$"
-          CLONE_DIR="$TEMP_DIR/repo_clone"
+          CLONE_DIR="/tmp/deploy-${{ env.URL }}-$$/repo"
 
-          git clone "git@github.com:${{ github.repository }}.git" "$CLONE_DIR"
           mkdir -p "$TARGET_DIR"
+          git clone "git@github.com:${{ github.repository }}.git" "$CLONE_DIR"
+
           rsync -aq --delete \
+            --exclude='node_modules' \
             --exclude='.env' \
             --exclude='logs' \
             --exclude='public/uploads' \
             "$CLONE_DIR/" "$TARGET_DIR/"
+          
+          rm -rf "$CLONE_DIR"
 
           cd "$TARGET_DIR"
-          npm ci || npm install
-          MAIN_FILE=$(node -e "console.log(require('./package.json').main || 'server.js')" 2>/dev/null || echo "server.js")
-          [[ -f "$MAIN_FILE" ]] && node -c "$MAIN_FILE"
-          pm2 describe ${{ env.APP_NAME }} > /dev/null 2>&1
-          [[ $? -eq 0 ]] && pm2 reload ${{ env.APP_NAME }} --update-env || pm2 start ${{ env.APP_NAME }}
-          rm -rf "$TEMP_DIR" "$CLONE_DIR"
+          npm ci
+          pm2 start ecosystem.config.js --update-env
 
       - name: Verify
         run: |
-          sleep 5
-          pm2 describe ${{ env.APP_NAME }} | grep "status" | grep -q "online" || exit 1
-          curl -sf http://localhost:${{ env.PORT }}/health || exit 1
+          echo "Waiting for app to be ready..."
+          MAX_ATTEMPTS=10
+          ATTEMPT=1
+          
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.PORT }}/health || echo "000")
+            
+            if [ "$HTTP_CODE" -eq 200 ]; then
+              echo "✓ Health check passed with HTTP code: 200"
+              exit 0
+            fi
+            
+            echo "Health check returned: $HTTP_CODE (retrying in 2s...)"
+            sleep 2
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+          
+          echo "✗ Health check failed after $MAX_ATTEMPTS attempts"
+          echo "Showing recent logs:"
+          pm2 logs ${{ env.APP_NAME }} --lines 50 --nostream || true
+          exit 1
