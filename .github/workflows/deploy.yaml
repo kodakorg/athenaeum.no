@@ -1,4 +1,4 @@
-name: Deploy Athenaeum.no
+name: Deploy athenaeum.no
 
 on:
   push:
@@ -41,6 +41,7 @@ jobs:
           cd "$TARGET_DIR"
           npm ci
           pm2 start ecosystem.config.js --update-env
+          pm2 save
 
       - name: Verify
         run: |
