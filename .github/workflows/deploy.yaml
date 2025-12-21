@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, runner-nginx]
+    runs-on: [self-hosted, rpi5]
     steps:
       - name: Setup Node
         run: |
