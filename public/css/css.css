@@ -109,6 +109,10 @@ body {
   letter-spacing: 1px;
 }
 
+#brand {
+  pointer-events: none;
+}
+
 html {
   overflow-y: scroll;
 }
