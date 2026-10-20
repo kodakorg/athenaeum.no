@@ -56,6 +56,12 @@
 html {
   overflow-y: scroll;
   -webkit-text-size-adjust: 100%;
+  background: var(--bg);
+}
+
+/* Only shown on phones, see the max-width: 767px block */
+.status-bar-tint {
+  display: none;
 }
 
 body {
@@ -757,15 +763,18 @@ input[type="checkbox"] {
 
 @media (max-width: 767px) {
 
-  /* iOS Safari tints the status bar from the page (html) background, not theme-color,
-     so give html the header colour and let body paint the content colour */
-  html {
+  /* iOS 26 Safari ignores theme-color and tints the status bar from a fixed element
+     touching the top edge (pseudo-elements don't count), so give it one in the header colour */
+  .status-bar-tint {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
     background: var(--bg-dark);
-  }
-
-  body {
-    min-height: 100vh;
-    min-height: 100dvh;
+    pointer-events: none;
+    z-index: 1000;
   }
 
   .site-header,
