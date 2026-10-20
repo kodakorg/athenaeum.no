@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 
 <head>
   <%- include('../partials/head') -%>
@@ -9,45 +9,31 @@
 
   <%- include('../partials/header') -%>
 
-  <div class="container fs-5 pt-3">
-    <table class="d-flex justify-content-center pb-4">
+  <main class="container prices">
+    <table class="price-table">
       <tr>
-        <td>Festsalen og Salongen:&nbsp;&nbsp;&nbsp;&nbsp;</td>
-        <td class="text-end">11.000,-</td>
+        <td>Festsalen og Salongen:</td>
+        <td>11.000,-</td>
       </tr>
       <tr>
         <td>Festsalen:</td>
-        <td class="text-end">8.000,-</td>
+        <td>8.000,-</td>
       </tr>
       <tr>
         <td>Salongen:</td>
-        <td class="text-end">5.000,-</td>
+        <td>5.000,-</td>
       </tr>
       <tr>
         <td>Peisestuen:</td>
-        <td class="text-end">4.000,-</td>
+        <td>4.000,-</td>
       </tr>
     </table>
-    <table class="d-flex justify-content-center p-3">
-      <tr>
-        <td class="mb-3">Leien inkluderer: Leie av glass, bestikk og stentøy (opptil ca 140 personer).<br><br></td>
-      </tr>
-      <tr>
-        <td>Pristillegg for bruk av runde bord kr 200,- pr bord, inkludert duker. Maks 2.000,- (for 12 bord).<br><br>
-        </td>
-      </tr>
-      <tr>
-        <td>Vasking av lokalene er inkludert i prisen.<br><br></td>
-      </tr>
-    </table>
-  </div>
-
-  <script>
-    document.getElementById("priser").classList.add("active");
-    document.getElementById("brand").textContent = "Priser";
-  </script>
-
-  <%- include('../partials/footer') -%>
+    <div class="price-notes">
+      <p>Leien inkluderer: Leie av glass, bestikk og stentøy (opptil ca 140 personer).</p>
+      <p>Pristillegg for bruk av runde bord kr 200,- pr bord, inkludert duker. Maks 2.000,- (for 12 bord).</p>
+      <p>Vasking av lokalene er inkludert i prisen.</p>
+    </div>
+  </main>
 
 </body>
 

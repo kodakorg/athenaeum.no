@@ -10,6 +10,9 @@ const axios = require('axios');
 require('dotenv').config()
 const rfs = require('rotating-file-stream');
 const fs = require('fs').promises;
+const fsSync = require('fs');
+const crypto = require('crypto');
+const compression = require('compression');
 
 if (process.env.ENABLE_FILE_LOGGING === 'true') {
   const accessLogStream = rfs.createStream('access.log', {
@@ -35,13 +38,50 @@ if (process.env.ENABLE_FILE_LOGGING === 'true') {
   app.use(morgan('combined'));
 }
 
+app.disable('x-powered-by');
+app.use(compression());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
-app.use('/css', express.static(path.join(__dirname, 'public/css')))
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
+// CSS/JS are referenced with ?v=<hash>, so they can be cached "forever"
+const assetVersion = crypto.createHash('sha1')
+  .update(fsSync.readFileSync(path.join(__dirname, 'public/css/css.css')))
+  .update(fsSync.readFileSync(path.join(__dirname, 'public/js/site.js')))
+  .digest('hex')
+  .slice(0, 10);
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (/\.(css|js|woff2)$/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (/\.(avif|webp|jpe?g|png|ico)$/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    }
+  }
+}));
 
 app.set('view engine', 'ejs');
 app.set('trust proxy', 1);
+
+const NAV = [
+  { href: '/', label: 'Forside' },
+  { href: '/kontaktskjema', label: 'Kontaktskjema' },
+  { href: '/vilkaar', label: 'Vilkår' },
+  { href: '/priser', label: 'Priser' },
+  { href: '/lokalene', label: 'Lokalene' },
+  { href: '/kalender', label: 'Kalender' },
+];
+
+app.use(function (req, res, next) {
+  res.locals.nav = NAV;
+  res.locals.currentPage = NAV.find(item => item.href === req.path);
+  res.locals.assetVersion = assetVersion;
+  // Pages are static, so a short cache lets hover-prefetched pages be reused on click
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'private, max-age=60');
+  }
+  next();
+});
 
 
 
@@ -56,6 +96,21 @@ const transporter = nodemailer.createTransport({
 function validateEmail(email) {
   const re = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   return re.test(email);
+}
+
+function escapeHtml(value) {
+  if (value === undefined || value === null) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Today's date in Norway as YYYY-MM-DD (same format as <input type="date">)
+function todayInOslo() {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Oslo' }).format(new Date());
 }
 
 async function verifyRecaptcha(token) {
@@ -96,7 +151,8 @@ app.get('/priser', function (req, res) {
 app.get('/kontaktskjema', function (req, res) {
   res.render('pages/kontaktskjema', {
     sjekk: false,
-    recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY
+    recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
+    minDato: todayInOslo()
   });
 });
 
@@ -115,13 +171,21 @@ app.post('/skjema', async function (req, res) {
     lokaler = "Ingen lokaler valgt";
   }
   let tekst = req.body.formaal;
-  let html_string = "";
-  html_string += "Navn: " + navn + "<br>";
-  html_string += "Epost: " + epost + "<br>";
-  html_string += "Telefonnummer: " + tlf + "<br>";
-  html_string += "Dato: " + dato + " <br>";
-  html_string += "Lokaler: " + req.body.lokaler + "<br>"
-  html_string += "Formålet med leien: " + tekst;
+  const fields = [
+    ["Navn", navn],
+    ["Epost", epost],
+    ["Telefonnummer", tlf],
+    ["Dato", dato],
+    ["Lokaler", lokaler],
+    ["Formålet med leien", tekst],
+  ];
+  // User input is escaped so it can't inject markup into the email
+  const html_string = fields
+    .map(([label, value]) => label + ": " + escapeHtml(value).replace(/\r?\n/g, "<br>"))
+    .join("<br>");
+  const text_string = fields
+    .map(([label, value]) => label + ": " + (value === undefined ? "" : String(value)))
+    .join("\n");
 
   if (!recaptchaToken) {
     message = "Vennligst fullfør reCAPTCHA-verifiseringen";
@@ -135,7 +199,7 @@ app.post('/skjema', async function (req, res) {
       message = "Epost har feil format";
     } else if (!/^[479]\d{7}$/.test(tlf)) {
       message = "Telefonnummer har feil format";
-    } else if (typeof dato === 'undefined' || dato === null || dato === '' || new Date(dato) < new Date()) {
+    } else if (typeof dato !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dato) || dato < todayInOslo()) {
       message = "Dato har feil format eller er i fortiden";
     } else if (typeof tekst === 'undefined' || tekst === null || tekst === '') {
       message = "Tekstfeltet er tomt";
@@ -152,7 +216,7 @@ app.post('/skjema', async function (req, res) {
         to: process.env.EMAIL_ADDRESS_TO,
         replyTo: epost,
         subject: 'Bestilling av rom for Namsos Athenæum',
-        text: html_string,
+        text: text_string,
         html: html_string
       }
     }

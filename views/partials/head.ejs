@@ -1,26 +1,51 @@
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#01071d">
-<title>Namsos Athenæum</title>
-<link rel="stylesheet" href="/css/bootstrap.min.css">
-<link rel="stylesheet" href="/css/css.css">
+<title><%= currentPage && currentPage.href !== '/' ? currentPage.label + ' – ' : '' %>Namsos Athenæum</title>
+<link rel="preload" href="/fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/FiraSans-Medium-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/css.css?v=<%= assetVersion %>">
+<script src="/js/site.js?v=<%= assetVersion %>" defer></script>
+
+<!-- Prerender same-site pages on hover/pointerdown (Chromium). site.js prefetches in other browsers. -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": {
+      "and": [
+        { "href_matches": "/*" },
+        { "not": { "href_matches": "/skjema" } }
+      ]
+    },
+    "eagerness": "moderate"
+  }]
+}
+</script>
 
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16521742869"></script>
 <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
 
-    gtag('config', 'AW-16521742869');
-</script>
+    // Don't count prerendered pages as views until the user actually navigates to them
+    function whenActivated(callback) {
+        if (document.prerendering) {
+            document.addEventListener('prerenderingchange', callback, { once: true });
+        } else {
+            callback();
+        }
+    }
 
-<!-- Event snippet for Sidevisning conversion page -->
-<script>
-    gtag('event', 'conversion', {
-        'send_to': 'AW-16521742869/taFgCOTi3aMZEJWUl8Y9',
-        'value': 1.0,
-        'currency': 'NOK'
+    whenActivated(function () {
+        gtag('js', new Date());
+        gtag('config', 'AW-16521742869');
+
+        // Event snippet for Sidevisning conversion page
+        gtag('event', 'conversion', {
+            'send_to': 'AW-16521742869/taFgCOTi3aMZEJWUl8Y9',
+            'value': 1.0,
+            'currency': 'NOK'
+        });
     });
 </script>

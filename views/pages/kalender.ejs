@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 
 <head>
   <%- include('../partials/head') -%>
@@ -9,30 +9,21 @@
 
   <%- include('../partials/header') -%>
 
-  <div class="p-3" style="text-align: center;">
-    <div class="p-3">
-      <div class="responsiveCal">
-        <div class="deskContent">
-          <iframe src="https://calendar.google.com/calendar/embed?src=namsos.athenaeum%40gmail.com&ctz=Europe%2FOslo"
-            style="border: 0" width="800" height="600" frameborder="0" scrolling="no">
-          </iframe>
-        </div>
-        <div class="phoneContent">
-          <iframe
-            src="https://calendar.google.com/calendar/embed?mode=AGENDA&amp;height=400&amp;wkst=1&amp;src=namsos.athenaeum%40gmail.com&ctz=Europe%2FOslo"
-            style="border: 0" width="280" height="500" frameborder="0" scrolling="no">
-          </iframe>
-        </div>
-      </div>
+  <main class="calendar-wrap">
+    <div class="calendar">
+      <!-- Only one iframe is loaded: agenda view on phones, month view otherwise -->
+      <iframe id="calendar" title="Kalender for Namsos Athenæum"></iframe>
+      <script>
+        document.getElementById('calendar').src = matchMedia('(max-width: 767px)').matches
+          ? 'https://calendar.google.com/calendar/embed?mode=AGENDA&height=400&wkst=1&src=namsos.athenaeum%40gmail.com&ctz=Europe%2FOslo'
+          : 'https://calendar.google.com/calendar/embed?src=namsos.athenaeum%40gmail.com&ctz=Europe%2FOslo';
+      </script>
+      <noscript>
+        <iframe title="Kalender for Namsos Athenæum"
+          src="https://calendar.google.com/calendar/embed?src=namsos.athenaeum%40gmail.com&ctz=Europe%2FOslo"></iframe>
+      </noscript>
     </div>
-  </div>
-
-  <script>
-    document.getElementById("kalender").classList.add("active");
-    document.getElementById("brand").textContent = "Kalender";
-  </script>
-
-  <%- include('../partials/footer') -%>
+  </main>
 
 </body>
 

@@ -1,6 +1,6 @@
 <!-- views/pages/kontaktskjema.ejs -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 
 <head>
   <%- include('../partials/head') -%>
@@ -11,118 +11,113 @@
 
   <%- include('../partials/header') -%>
 
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
+  <div class="loading-overlay" id="loadingOverlay" role="status" hidden>
+    <div class="spinner" aria-hidden="true"></div>
     <h3 class="loading-text">Sender skjema, vennligst vent...</h3>
   </div>
 
-  <div class="container pt-3" style="max-width: 800px;">
-    <h3 class="d-none d-md-block">Kontaktskjema</h3>
-    <form action="/skjema" id="kontaktskjema" method="post">
-      <div class="mb-3">
+  <main class="container pt-3">
+    <h3 class="desktop-only">Kontaktskjema</h3>
+    <p class="form-note">Alle felt må fylles ut.</p>
+    <!-- novalidate: the FormValidator script below shows its own error messages -->
+    <form action="/skjema" id="kontaktskjema" method="post" novalidate>
+      <div class="field">
         <label for="navn" class="form-label">Navn:</label>
-        <input type="text" class="form-control" name="navn" id="navn" autocomplete="name">
+        <input type="text" class="form-control" name="navn" id="navn" autocomplete="name" required
+          aria-describedby="navn-error">
         <div class="error" id="navn-error"></div>
       </div>
-      <div class="mb-3">
+      <div class="field">
         <label for="email" class="form-label">E-post:</label>
-        <input type="text" id="email" class="form-control" name="epost" autocomplete="email">
+        <input type="email" id="email" class="form-control" name="epost" autocomplete="email" required
+          aria-describedby="email-error">
         <div class="error" id="email-error"></div>
       </div>
-      <div class="mb-3">
+      <div class="field">
         <label for="tlf" class="form-label">Telefon:</label>
-        <input type="text" class="form-control" name="tlf" id="tlf" autocomplete="tel">
+        <input type="tel" class="form-control" name="tlf" id="tlf" autocomplete="tel" inputmode="numeric"
+          maxlength="8" required aria-describedby="tlf-error">
         <div class="error" id="tlf-error"></div>
       </div>
-      <div class="mb-5">
-        <label class="form-label" for="dato">Dato:</label><br>
-        <input type="date" id="dato" name="dato">
+      <div class="field field-spaced">
+        <label class="form-label" for="dato">Dato:</label>
+        <input type="date" class="form-control form-control-auto" id="dato" name="dato" min="<%= minDato %>"
+          required aria-describedby="dato-error">
         <div class="error" id="dato-error"></div>
       </div>
-      <div class="mb-5">
-        <p>Hvilket av lokalene vil du leie:</p>
-        <div class="form-check">
-          <input type="radio" class="form-check-input" id="festsalenogsalongen" name="lokaler"
-            value="Festsalen og Salongen">
-          <label class="form-check-label" for="festsalenogsalongen">Festsalen og Salongen</label><br>
-        </div>
-        <div class="form-check">
-          <input type="radio" class="form-check-input" id="festsalen" name="lokaler" value="Festsalen">
-          <label class="form-check-label" for="festsalen">Festsalen</label><br>
-        </div>
-        <div class="form-check">
-          <input type="radio" class="form-check-input" id="salongen" name="lokaler" value="Salongen">
-          <label class="form-check-label" for="salongen">Salongen</label><br>
-        </div>
-        <div class="form-check">
-          <input type="radio" class="form-check-input" id="peisestuen" name="lokaler" value="Peisestuen">
-          <label class="form-check-label" for="peisestuen">Peisestuen</label><br>
+      <fieldset class="field field-spaced" aria-describedby="lokaler-error">
+        <legend>Hvilket av lokalene vil du leie:</legend>
+        <div class="room-options" id="lokaler">
+          <label class="room-option">
+            <input type="radio" id="festsalenogsalongen" name="lokaler" value="Festsalen og Salongen" required>
+            Festsalen og Salongen
+          </label>
+          <label class="room-option">
+            <input type="radio" id="festsalen" name="lokaler" value="Festsalen">
+            Festsalen
+          </label>
+          <label class="room-option">
+            <input type="radio" id="salongen" name="lokaler" value="Salongen">
+            Salongen
+          </label>
+          <label class="room-option">
+            <input type="radio" id="peisestuen" name="lokaler" value="Peisestuen">
+            Peisestuen
+          </label>
         </div>
         <div class="error" id="lokaler-error"></div>
-      </div>
-      <div class="mb-3">
+      </fieldset>
+      <div class="field">
         <label for="formaal" class="form-label">Formål med leien:</label>
-        <textarea class="form-control" id="formaal" name="formaal" rows="4"></textarea>
+        <textarea class="form-control" id="formaal" name="formaal" rows="4" required
+          aria-describedby="formaal-error"></textarea>
         <div class="error" id="formaal-error"></div>
       </div>
 
-      <div class="form-group recaptcha-container mb-3">
-        <div id="recaptcha" class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>" data-callback="recaptchaCallback"
-          data-expired-callback="recaptchaExpired"></div>
+      <div class="field recaptcha-container">
+        <div id="recaptcha" class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>" data-theme="dark"
+          data-callback="recaptchaCallback" data-expired-callback="recaptchaExpired"></div>
         <div class="error" id="recaptcha-error"></div>
       </div>
 
-      <div class="mb-3">
+      <div class="field">
         <input id="myCheckbox" type="checkbox">
-        <label for="myCheckbox">Jeg vedtar å ha lest <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal"
-            id="terms">vilkårene</a></label>
+        <label for="myCheckbox">Jeg vedtar å ha lest <a href="/vilkaar" id="terms">vilkårene</a></label>
         <br><br>
-        <button class="btn btn-primary" type="submit" id="myButton" disabled>
+        <button class="btn" type="submit" id="myButton" disabled>
           <span id="buttonText">Send</span>
         </button>
       </div>
     </form>
-  </div>
+  </main>
 
-  <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-body" id="modal-content"
-          style="background-color: #f8f9fa; color: #212529; font-size: 0.95rem; line-height: 1.6;">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Lukk</button>
-        </div>
-      </div>
+  <dialog class="modal" id="termsModal" aria-labelledby="termsModalLabel">
+    <div class="modal-header">
+      <h4 id="termsModalLabel">Vilkår for leie av Namsos Athenæum</h4>
     </div>
-  </div>
-
-  <br>
-  <%- include('../partials/footer') -%>
+    <div class="modal-body">
+      <%- include('../partials/vilkaar-tekst') -%>
+    </div>
+    <form method="dialog" class="modal-footer">
+      <button class="btn btn-secondary">Lukk</button>
+    </form>
+  </dialog>
 
   <script>
     let isSubmitting = false;
 
-    document.getElementById("skjema").classList.add("active");
-    document.getElementById("brand").textContent = "Kontaktskjema";
+    const termsModal = document.getElementById('termsModal');
 
-    document.getElementById('termsModal').addEventListener('show.bs.modal', function () {
-      const modalContent = document.getElementById('modal-content');
-      modalContent.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    document.getElementById('terms').addEventListener('click', function (e) {
+      e.preventDefault();
+      termsModal.showModal();
+    });
 
-      fetch('/vilkaar.txt')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(data => {
-          modalContent.innerHTML = '<div style="background-color: #ffffff; color: #212529; padding: 1rem; border-radius: 0.375rem; border: 1px solid #dee2e6; margin: 0;">' + data + '</div>';
-        })
-        .catch(error => {
-          modalContent.innerHTML = '<p class="text-danger">Kunne ikke laste vilkårene. Error: ' + error.message + '</p>';
-        });
+    // Close when clicking the backdrop
+    termsModal.addEventListener('click', function (e) {
+      if (e.target === termsModal) {
+        termsModal.close();
+      }
     });
 
     window.recaptchaCallback = function (response) {
@@ -140,7 +135,7 @@
     };
 
     function showLoadingOverlay() {
-      document.getElementById('loadingOverlay').style.display = 'flex';
+      document.getElementById('loadingOverlay').hidden = false;
       document.getElementById('myButton').disabled = true;
       document.getElementById('myButton').classList.add('btn-submitting');
       document.getElementById('buttonText').textContent = 'Sender...';
@@ -148,7 +143,7 @@
     }
 
     function hideLoadingOverlay() {
-      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('loadingOverlay').hidden = true;
       document.getElementById('myButton').disabled = false;
       document.getElementById('myButton').classList.remove('btn-submitting');
       document.getElementById('buttonText').textContent = 'Send';
@@ -185,7 +180,11 @@
         },
         dato: {
           required: true,
-          message: "Dato må fylles ut"
+          notPast: true,
+          messages: {
+            required: "Dato må fylles ut",
+            notPast: "Dato kan ikke være i fortiden"
+          }
         },
         lokaler: {
           required: true,
@@ -207,6 +206,8 @@
         numeric: (value) => /^\d+$/.test(value),
         minLength: (value, length) => value.length >= length,
         maxLength: (value, length) => value.length <= length,
+        // Dates are YYYY-MM-DD, so they compare correctly as strings
+        notPast: (value) => value >= document.getElementById('dato').min,
         recaptcha: () => {
           const response = grecaptcha.getResponse();
           return response && response.length > 0;
@@ -226,6 +227,7 @@
           if (field) {
             field.classList.add('is-invalid');
             field.classList.remove('is-valid');
+            field.setAttribute('aria-invalid', 'true');
           }
         }
 
@@ -247,6 +249,7 @@
           if (field) {
             field.classList.remove('is-invalid');
             field.classList.add('is-valid');
+            field.removeAttribute('aria-invalid');
           }
         }
 
@@ -315,6 +318,11 @@
         if (rule.maxLength && !FormValidator.validators.maxLength(value, rule.maxLength)) {
           const message = rule.messages?.maxLength || `Must be no more than ${rule.maxLength} characters`;
           FormValidator.showError(fieldName, message);
+          return false;
+        }
+
+        if (rule.notPast && !FormValidator.validators.notPast(value)) {
+          FormValidator.showError(fieldName, rule.messages.notPast);
           return false;
         }
 
@@ -388,7 +396,8 @@
         if (!FormValidator.validateForm()) {
           const firstInvalidField = document.querySelector('.is-invalid');
           if (firstInvalidField) {
-            firstInvalidField.focus();
+            // The room cards wrapper isn't focusable, so focus its first radio instead
+            (firstInvalidField.querySelector('input') || firstInvalidField).focus();
           }
           return;
         }
@@ -404,8 +413,9 @@
       });
     });
 
-    window.addEventListener('beforeunload', function () {
-      if (isSubmitting) {
+    // Reset the form state when the page is restored from the back/forward cache
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted && isSubmitting) {
         hideLoadingOverlay();
       }
     });

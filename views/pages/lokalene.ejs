@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 
 <head>
   <%- include('../partials/head') -%>
@@ -9,23 +9,25 @@
 
   <%- include('../partials/header') -%>
 
-  <div class="pt-3 justify-content-center container" style="max-width: 740px;">
-    <h3>Festsalen</h3>
-    <img class="rounded_image img-fluid mb-3" src="images/festsalen_no_edge.jpg" alt="festsalen"><br>
-    <h3>Salongen</h3>
-    <img class="rounded_image img-fluid mb-3" src="images/salongen_no_edge.jpg" alt="salongen"><br>
-    <h3>Peisestuen</h3>
-    <img class="rounded_image img-fluid mb-3" src="images/peisestuen_no_edge.jpg" alt="peisestuen"><br>
-    <h3>Kjøkkenet</h3>
-    <img class="rounded_image img-fluid mb-3" src="images/kjoekkenet_no_edge.jpg" alt="kjøkkenet"><br>
-  </div>
-
-  <script>
-    document.getElementById("lokalene").classList.add("active");
-    document.getElementById("brand").textContent = "Lokalene";
-  </script>
-
-  <%- include('../partials/footer') -%>
+  <%
+    const rom = [
+      { navn: 'Festsalen', bilde: 'festsalen_no_edge', w: 747, h: 443 },
+      { navn: 'Salongen', bilde: 'salongen_no_edge', w: 740, h: 468 },
+      { navn: 'Peisestuen', bilde: 'peisestuen_no_edge', w: 743, h: 465 },
+      { navn: 'Kjøkkenet', bilde: 'kjoekkenet_no_edge', w: 741, h: 564 },
+    ];
+  %>
+  <main class="container narrow pt-3">
+    <% rom.forEach(function (r, i) { %>
+    <h3><%= r.navn %></h3>
+    <picture>
+      <source srcset="/images/<%= r.bilde %>.avif" type="image/avif">
+      <source srcset="/images/<%= r.bilde %>.webp" type="image/webp">
+      <img class="rounded_image" src="/images/<%= r.bilde %>.jpg" width="<%= r.w %>" height="<%= r.h %>"
+        alt="<%= r.navn.toLowerCase() %>" <%- i === 0 ? 'fetchpriority="high"' : 'loading="lazy"' %> decoding="async">
+    </picture>
+    <% }); %>
+  </main>
 
 </body>
 

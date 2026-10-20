@@ -1,6 +1,6 @@
 <!-- views/pages/tilbakemelding.ejs -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 
 <head>
   <%- include('../partials/head') -%>
@@ -10,16 +10,14 @@
 
   <%- include('../partials/header') -%>
 
-  <div class="pt-3 d-flex container justify-content-center" id="tilbakemelding">
+  <main class="container pt-3 text-center" id="tilbakemelding">
     <% if (sjekk) { %>
     <%= message %>
     <% } else { %>
     Feil ved innsending av skjema:<br>
     Feilmelding: <%= message %>
     <% } %>
-  </div>
-
-  <%- include('../partials/footer') -%>
+  </main>
 
 </body>
 

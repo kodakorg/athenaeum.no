@@ -1,4 +1,4 @@
-<header>
+<header class="site-header">
   <a class="header_href" href="/">
     <div class="logo fira-sans-medium">
       <div class="top lined">NAMSOS</div>
@@ -7,36 +7,24 @@
     </div>
   </a>
 
-  <nav class="navbar navbar-expand-md pt-0 mt-0">
-    <span class="navbar-brand hvit fira-sans-medium ps-3 fs-4 d-md-none" id="brand"></span>
-    <button type="button" class="navbar-toggler collapsed me-3" data-bs-toggle="collapse"
-      data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false"
-      aria-label="Toggle navigation">
-      <span class="toggler-content">
-        <span class="icon-container">
-          <span class="icon-bar top-bar"></span>
-          <span class="icon-bar middle-bar"></span>
-          <span class="icon-bar bottom-bar"></span>
-        </span>
-        <span class="toggler-text fira-sans-medium">Meny</span>
+  <nav class="navbar fira-sans-medium">
+    <span class="navbar-brand" id="brand"><%= currentPage ? currentPage.label : '' %></span>
+    <button type="button" class="navbar-toggler" aria-controls="navbarCollapse" aria-expanded="false"
+      aria-label="Vis meny">
+      <span class="icon-container" aria-hidden="true">
+        <span class="icon-bar top-bar"></span>
+        <span class="icon-bar middle-bar"></span>
+        <span class="icon-bar bottom-bar"></span>
       </span>
+      <span class="toggler-text">Meny</span>
     </button>
-    <div class="collapse navbar-collapse justify-content-center" id="navbarCollapse">
-      <div class="navbar-nav ms-3 fira-sans-medium">
-        <a href="/" id="forside" class="nav-item nav-link">Forside</a>
-        <a href="/kontaktskjema" id="skjema" class="nav-item nav-link">Kontaktskjema</a>
-        <a href="/vilkaar" id="vilkaar" class="nav-item nav-link">Vilkår</a>
-        <a href="/priser" id="priser" class="nav-item nav-link">Priser</a>
-        <a href="/lokalene" id="lokalene" class="nav-item nav-link">Lokalene</a>
-        <a href="/kalender" id="kalender" class="nav-item nav-link">Kalender</a>
+    <div class="navbar-collapse" id="navbarCollapse">
+      <div class="navbar-nav">
+        <% nav.forEach(function (item) { %>
+        <a href="<%= item.href %>" class="nav-link<%= currentPage === item ? ' active' : '' %>"
+          <%- currentPage === item ? 'aria-current="page"' : '' %>><%= item.label %></a>
+        <% }); %>
       </div>
     </div>
   </nav>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      var navbarToggler = document.querySelector('.navbar-toggler');
-      navbarToggler.addEventListener('click', function () { });
-    });
-  </script>
 </header>

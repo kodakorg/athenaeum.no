@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 
 <head>
   <%- include('../partials/head') -%>
@@ -9,13 +9,17 @@
 
   <%- include('../partials/header') -%>
 
-  <div class="pt-4 fs-6 container justify-content-center" style="max-width: 750px;">
-    <img class="rounded_image img-fluid mb-3" src="images/athenaeum_no_edge.jpg" alt="Athenaeum Namsos">
+  <main class="container narrow pt-4">
+    <picture>
+      <source srcset="/images/athenaeum_no_edge.avif" type="image/avif">
+      <source srcset="/images/athenaeum_no_edge.webp" type="image/webp">
+      <img class="rounded_image" src="/images/athenaeum_no_edge.jpg" width="741" height="454"
+        alt="Athenaeum Namsos" fetchpriority="high">
+    </picture>
     <p>
       Namsos Athenæum ligger sentralt i Namsos sentrum, nærmere bestemt i Sverres gate 1.
       Lokalet har festsal med plass til ca. 140 personer, salong med 44 sitteplasser og peisestue som kan dekkes til
-      ca.
-      40 personer.
+      ca. 40 personer.
     </p>
     <p>
       Forespørsel om leie gjøres på <a href="/kontaktskjema">kontaktskjema</a>.
@@ -26,14 +30,7 @@
     <p>
       For priser, se <a href="/priser">priser</a>.
     </p>
-  </div>
-
-  <script>
-    document.getElementById("forside").classList.add("active");
-    document.getElementById("brand").textContent = "Forside";
-  </script>
-
-  <%- include('../partials/footer') -%>
+  </main>
 
 </body>
 
