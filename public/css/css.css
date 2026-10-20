@@ -757,6 +757,17 @@ input[type="checkbox"] {
 
 @media (max-width: 767px) {
 
+  /* iOS Safari tints the status bar from the page (html) background, not theme-color,
+     so give html the header colour and let body paint the content colour */
+  html {
+    background: var(--bg-dark);
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   .site-header,
   .logo {
     background: var(--bg-dark);
