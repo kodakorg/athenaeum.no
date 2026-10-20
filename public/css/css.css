@@ -59,10 +59,6 @@ html {
   background: var(--bg);
 }
 
-/* Only shown on phones, see the max-width: 767px block */
-.status-bar-tint {
-  display: none;
-}
 
 body {
   margin: 0;
@@ -189,7 +185,12 @@ textarea {
 
 /* ---------- Header / logo ---------- */
 
+/* Fixed line heights keep the logo exactly --logo-height tall (24 + 35 + 24),
+   which the sticky phone header relies on */
 .logo {
+  --logo-height: 83px;
+  height: var(--logo-height);
+  line-height: 24px;
   color: var(--text);
   background: var(--bg);
   text-align: center;
@@ -763,18 +764,13 @@ input[type="checkbox"] {
 
 @media (max-width: 767px) {
 
-  /* iOS 26 Safari ignores theme-color and tints the status bar from a fixed element
-     touching the top edge (pseudo-elements don't count), so give it one in the header colour */
-  .status-bar-tint {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--bg-dark);
-    pointer-events: none;
-    z-index: 1000;
+  /* Safari on iOS 26 ignores theme-color and tints the status bar (clock, battery)
+     from a sticky element at the top (same fix as britasmat.no). The negative top
+     lets the logo scroll away while the Forside/Meny row stays pinned. */
+  .site-header {
+    position: sticky;
+    top: -83px; /* = .logo --logo-height */
+    z-index: 20;
   }
 
   .site-header,
