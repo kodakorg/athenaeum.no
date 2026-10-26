@@ -1,6 +1,6 @@
 module.exports = {
     apps: [{
-        name: 'athenaeum',
+        name: 'athenæum.no',
         script: 'npm',
         args: 'run start',
         cwd: '/home/zom/www/athenaeum.no',
