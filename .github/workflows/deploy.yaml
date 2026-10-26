@@ -18,7 +18,6 @@ jobs:
       - name: Set environment variables
         run: |
           echo "URL=athenaeum.no" >> $GITHUB_ENV
-          echo "APP_NAME=athenaeum" >> $GITHUB_ENV
           echo "PORT=3001" >> $GITHUB_ENV
 
       - name: Deploy
@@ -65,5 +64,5 @@ jobs:
           
           echo "✗ Health check failed after $MAX_ATTEMPTS attempts"
           echo "Showing recent logs:"
-          pm2 logs ${{ env.APP_NAME }} --lines 50 --nostream || true
+          pm2 logs ${{ env.URL }} --lines 50 --nostream || true
           exit 1
