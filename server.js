@@ -282,6 +282,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, (err) => {
+  if (err) throw err
   console.log(`App listening at http://localhost:${PORT}`)
 })
